@@ -1,0 +1,13 @@
+.card_container {
+    position: relative;
+    text-align: center;
+}
+
+.btn_abs {
+    position: absolute;
+    bottom: 10px;
+}
+
+#popup-img {
+    border: 5px solid #fff;
+}

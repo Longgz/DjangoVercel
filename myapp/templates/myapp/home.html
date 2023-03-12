@@ -1,0 +1,250 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Image Upload</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+  <body>
+
+    <div class="container">
+        <div class="py-5 text-center bg-secondary text-white">
+            <h1 class="mb-3">Upload Image</h1>
+            <form action="{% url 'post' %}" method="POST" id="submit-img"  enctype="multipart/form-data">
+                {% csrf_token %}
+                {{form}}
+                <div class="col-auto mt-2">
+                    <input type="submit" class="btn btn-success" value="Upload">
+                </div>
+            </form>
+        </div>
+
+        <div class="row parent">
+            {% for x in img %}
+                <div class="col-sm-3">
+                    <div class="card m-2">
+                        {% if '.mp4' in x.photo.url %}
+                        <video autoplay="autoplay" controls="controls" preload="preload" height="200px">
+                            <source src="{{x.photo.url}}" type="video/mp4"></source>
+                        </video>
+                        {% else %}
+                        <div class="card_container d-flex justify-content-center">
+                            <img src="{{x.photo.url}}" alt="" class="card-img-top" height="200px"> 
+                            <button class="btn btn-outline-info w-75 btn_abs">View</button>
+                        </div>
+                        {% endif %}
+                        <div class="card-footer">
+                            <small class="text-muted">{{x.date}}</small>
+                            {% if x.note %}
+                            <p id="note_text"><em>{{x.note}}</em></p>
+                            {% endif %}
+                            <button class="btn btn-info m-2 update_note" id="{{x.id}}">Update Note</button>
+                            <form action="{% url 'delete' x.id %}" class="form-del">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger m-2 btn-del">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+  
+        <!-- Modal -->
+        <div class="modal modal_img fade" id="exampleModalCenter1" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <img class="w-100" id="popup-img" src="" alt="">
+            </div>
+            </div>
+        </div>
+        
+        <!-- Modal Update -->
+        <div class="modal modal_update_note fade" id="exampleModalCenter2" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+            <form class="modal-content" action="" method="POST" id="update-note-form">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Update Note</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <p hidden id="id-text"></p>
+                        <label for="message-text" class="col-form-label">Note:</label>
+                        <textarea class="form-control" id="message-text" name="note_update"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary btn_update">Save changes</a>
+                </div>
+            </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+
+    <script>
+    $("#submit-img").submit(function (e) {
+        // preventing from page reload and default action
+        e.preventDefault();
+
+        let html_text_begin = `<div class="col-sm-3">
+                    <div class="card m-2">`;
+
+        let html_text_content = ``;
+
+        let html_text_end = `</div>
+                </div>`;
+
+        let fd = new FormData($(this)[0]);
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        // make POST ajax call
+        $.ajax({
+            type: "POST",
+            url: '{% url "post" %}',
+            data: fd,
+            contentType: false,
+            processData: false,
+            success: function (response) {
+                // 1. Clear the form
+                $("#submit-img").trigger("reset");
+                // Display the newly photo
+                let instance = JSON.parse(response['instance']);
+                let fields = instance[0];
+                for(let i=0; i<instance.length; i++) {
+                    console.log(instance[i])
+                    html_text_content = ``;
+                    if(instance[i]['fields']['photo'].includes('.mp4')) {
+                        html_text_content += `
+                        <video autoplay="autoplay" controls="controls" preload="preload" height="200px">
+                            <source src="/media/${instance[i]['fields']['photo']}" type="video/mp4"></source>
+                        </video>
+                        `
+                    } else {
+                        html_text_content += `
+                        <div class="card_container d-flex justify-content-center">
+                            <img src="/media/${instance[i]['fields']['photo']}" alt="" class="card-img-top" height="200px"> 
+                            <button class="btn btn-outline-info w-75 btn_abs">View</button>
+                        </div>
+                        `
+                    }
+                    html_text_content += `
+                        <div class="card-footer">
+                            <small class="text-muted">${instance[i]['fields']['date']}</small>
+                    `
+                    if(instance[i]['fields']['note'] != null) {
+                        html_text_content += `
+                        <p><em>${instance[i]['fields']['note']}</em></p>
+                        `
+                    }
+                    html_text_content += `
+                    <button class="btn btn-info m-2 update_note" id="${instance[i]['pk']}">Update Note</button>
+                            <form action="/delete-img/${instance[i]['pk']}" class="form-del">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger m-2 btn-del">Delete</button>
+                            </form>
+                    `
+
+                    $('.parent').append(html_text_begin + html_text_content + html_text_end)
+                }
+            },
+            error: function (response) {
+                alert("Có lỗi xảy ra, vui lòng thử lại!");
+            },
+        }).then(function() {
+            $(".btn_abs").click(function () {
+                let src_img = $(this).siblings()[0].src;
+                $(".modal_img").modal("show");
+                $("#popup-img").attr("src", src_img);
+            });
+            $(".update_note").click(function () {
+                $("#message-text").val("");
+                if ($(this).siblings()[1].tagName == "P") {
+                    $("#message-text").val($(this).siblings()[1].textContent);
+                }
+                $("#id-text").val($(this).attr("id"));
+                $("#update-note-form").attr("action", `/update-note/${$(this).attr("id")}`);
+                $(".modal_update_note").modal("show");
+            });
+            $('.form-del').submit(function(e) {
+                let parent_del = $(this).closest('.col-sm-3');
+                e.preventDefault();
+                let fd = new FormData();
+                fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                $.ajax({
+                    type: 'POST',
+                    url: $(this).attr('action'),
+                    data: fd,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        parent_del[0].remove();
+                    },
+                    error: function(response) {
+                        alert('Có lỗi xảy ra, vui lòng thử lại!');
+                    }
+                })
+            })
+        });
+    })
+
+    $('#update-note-form').submit(function(e) {
+        e.preventDefault();
+        let id_update = $("#id-text").val();
+        let note_update = $("#message-text").val();
+        let fd = new FormData($(this)[0]);
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        $.ajax({
+            type: "POST",
+            url: $('#update-note-form').attr('action'),
+            data: fd,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                let instance = JSON.parse(response['instance'])[0];
+                if ($(`#${instance['pk']}`).siblings()[1].tagName == "P") {
+                    $(`#${instance['pk']}`).siblings()[1].textContent = instance['fields']['note']
+                } else {
+                    $(`#${instance['pk']}`).before(`<p id="note_text"><em>${instance['fields']['note']}</em></p>`);
+                }
+            },
+            error: function(response) {
+                alert('Có lỗi xảy ra, vui lòng thử lại!');
+            }
+        }).then(function() {
+            $(".modal_update_note").modal("hide");
+        })
+    })
+
+    $('.form-del').submit(function(e) {
+        let parent_del = $(this).closest('.col-sm-3');
+        e.preventDefault();
+        let fd = new FormData();
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        $.ajax({
+            type: 'POST',
+            url: $(this).attr('action'),
+            data: fd,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                parent_del[0].remove();
+            },
+            error: function(response) {
+                alert('Có lỗi xảy ra, vui lòng thử lại!');
+            }
+        })
+    })
+
+    </script>
+
+</body>
+</html>
