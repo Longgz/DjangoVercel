@@ -9,9 +9,3 @@ def validate_file_extension(value):
     valid_extensions = ['.jpg', '.png', '.mp4', '.ico']
     if not ext.lower() in valid_extensions:
         raise ValidationError('Unsupported file extension.')
-    
-
-def file_size(value): # add this to some file where you can import it from
-    limit = 2 * 1024 * 1024
-    if value.size > limit:
-        raise ValidationError('File too large. Size should not exceed 2 MiB.')

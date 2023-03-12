@@ -121,8 +121,6 @@ STATIC_URL = "static/"
 
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
-# Vercel
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build', 'static')
 
 MEDIA_URL = 'media/'
 
